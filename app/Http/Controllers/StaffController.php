@@ -4,19 +4,24 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
-use Illuminate\Support\Facades\Hash;
+use Inertia\Inertia;
 
 class StaffController extends Controller
 {
+    public function create()
+    {
+        return Inertia::render('CreateStaff');
+    }
+
     public function store(Request $request)
     {
         User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'password' => bcrypt($request->password),
             'role' => 'staff',
         ]);
 
-        return back();
+        return redirect('/dashboard');
     }
 }
