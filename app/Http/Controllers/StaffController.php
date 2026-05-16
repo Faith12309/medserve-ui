@@ -10,6 +10,12 @@ class StaffController extends Controller
 {
     public function store(Request $request)
     {
+        $request->validate([
+            'name' => 'required',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|min:6',
+        ]);
+
         User::create([
             'name' => $request->name,
             'email' => $request->email,
@@ -17,6 +23,9 @@ class StaffController extends Controller
             'role' => 'staff',
         ]);
 
-        return back();
+        return redirect()->back()->with(
+            'success',
+            'Staff account created successfully'
+        );
     }
 }

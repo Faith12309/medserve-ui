@@ -26,28 +26,28 @@ export default function Dashboard() {
 
             <div className="p-6">
 
-                <h1 className="text-4xl font-bold mb-4">
+                <h1 className="text-4xl font-bold mb-2">
                     Welcome {user.name}
                 </h1>
 
-                <p className="text-xl mb-6">
+                <p className="text-gray-600 text-lg mb-8">
                     Role: {user.role}
                 </p>
 
                 {user.role === 'admin' && (
-                    <div className="bg-blue-100 p-5 rounded-lg mb-6">
+                    <div className="bg-blue-100 border border-blue-200 p-6 rounded-xl mb-8 shadow-sm">
 
-                        <h2 className="font-bold text-2xl">
+                        <h2 className="font-bold text-3xl mb-2 text-blue-900">
                             Admin Panel
                         </h2>
 
-                        <p className="mb-4">
-                            Only admins can see this.
+                        <p className="mb-5 text-blue-800">
+                            Only admins can create staff accounts.
                         </p>
 
                         <Link
                             href="/admin/create-staff"
-                            className="bg-blue-500 text-white px-5 py-2 rounded"
+                            className="bg-blue-500 hover:bg-blue-600 transition text-white px-6 py-3 rounded-lg inline-block"
                         >
                             Create Staff
                         </Link>
@@ -55,9 +55,23 @@ export default function Dashboard() {
                     </div>
                 )}
 
+                {user.role === 'staff' && (
+                    <div className="bg-green-100 border border-green-200 p-6 rounded-xl mb-8 shadow-sm">
+
+                        <h2 className="font-bold text-3xl mb-2 text-green-900">
+                            Staff Panel
+                        </h2>
+
+                        <p className="text-green-800">
+                            Welcome to the MedServe staff dashboard.
+                        </p>
+
+                    </div>
+                )}
+
                 <button
                     onClick={handleLogout}
-                    className="bg-red-500 text-white px-5 py-2 rounded"
+                    className="bg-red-500 hover:bg-red-600 transition text-white px-6 py-3 rounded-lg"
                 >
                     Logout
                 </button>
