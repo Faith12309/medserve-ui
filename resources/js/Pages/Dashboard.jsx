@@ -1,28 +1,52 @@
+import {
+    LayoutDashboard,
+    UserPlus,
+    Users,
+    CalendarDays,
+    Package,
+    Pill,
+    Syringe,
+    BarChart3,
+    Settings,
+    Bell
+} from 'lucide-react';
+
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, usePage, router, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
+import { useState } from 'react';
 
-export default function Dashboard() {
+export default function Dashboard({
+    residents,
+    totalResidents,
+    pendingImmunizations,
+    lowStockCount,
+    nearExpiry,
+    dispensedMedicines,
+    alerts
+}) {
 
-    const props = usePage().props;
+const { auth } = usePage().props;
+const user = auth.user;
 
-    const user = props.auth?.user;
+const [showNotifications, setShowNotifications] = useState(false);
+const [search, setSearch] = useState('');
 
-    const handleLogout = () => {
-        router.post(route('logout'));
-    };
+const filteredResidents = residents.filter((resident) =>
+    resident.name.toLowerCase().includes(search.toLowerCase())
+);
 
-    if (!user) {
-        return (
-            <div className="p-6 text-red-500">
-                User not loaded.
-            </div>
-        );
-    }
+return (
 
-    return (
-        <AuthenticatedLayout>
+<AuthenticatedLayout>
 
-            <Head title="Dashboard" />
+<Head title="Dashboard" />
+
+<div className="flex min-h-screen bg-[#f5f7fb]">
+
+    {/* SIDEBAR */}
+    <div className="w-[250px] bg-white border-r border-gray-200 flex flex-col justify-between">
+
+        <div>
 
             <div className="p-6">
 
@@ -34,10 +58,126 @@ export default function Dashboard() {
                     Role: {user.role}
                 </p>
 
-                {user.role === 'admin' && (
-                    <div className="bg-blue-100 border border-blue-200 p-6 rounded-xl mb-8 shadow-sm">
+            </div>
 
-                        <h2 className="font-bold text-3xl mb-2 text-blue-900">
+            <nav className="px-4">
+
+                {/* Dashboard */}
+                <a
+                    href="/dashboard"
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-50 text-blue-600 font-semibold"
+                >
+                    <LayoutDashboard size={18} />
+                    Dashboard
+                </a>
+
+                {/* Residents */}
+                <div className="mt-7">
+
+                    <p className="text-[11px] uppercase tracking-[1px] text-gray-400 font-semibold mb-3 px-2">
+                        Residents
+                    </p>
+
+                    <a
+                        href="#"
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition"
+                    >
+                        <Users size={18} />
+                        Residents List
+                    </a>
+
+                    <a
+                        href="#"
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition"
+                    >
+                        <CalendarDays size={18} />
+                        Visit History
+                    </a>
+
+                </div>
+
+                {/* Medicine */}
+                <div className="mt-7">
+
+                    <p className="text-[11px] uppercase tracking-[1px] text-gray-400 font-semibold mb-3 px-2">
+                        Medicine Management
+                    </p>
+
+                    <a
+                        href="#"
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition"
+                    >
+                        <Package size={18} />
+                        Inventory
+                    </a>
+
+                    <a
+                        href="#"
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition"
+                    >
+                        <Pill size={18} />
+                        Dispensation
+                    </a>
+
+                </div>
+
+                {/* Immunization */}
+                <div className="mt-7">
+
+                    <p className="text-[11px] uppercase tracking-[1px] text-gray-400 font-semibold mb-3 px-2">
+                        Immunization
+                    </p>
+
+                    <a
+                        href="#"
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition"
+                    >
+                        <Syringe size={18} />
+                        Immunization Records
+                    </a>
+
+                </div>
+
+                {/* Reports */}
+                <div className="mt-7">
+
+                    <p className="text-[11px] uppercase tracking-[1px] text-gray-400 font-semibold mb-3 px-2">
+                        Reports
+                    </p>
+
+                    <a
+                        href="/health-reports"
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition"
+                    >
+                        <BarChart3 size={18} />
+                        Health Reports
+                    </a>
+
+                </div>
+
+                {/* Settings */}
+                <div className="mt-7">
+
+                    <p className="text-[11px] uppercase tracking-[1px] text-gray-400 font-semibold mb-3 px-2">
+                        Settings
+                    </p>
+
+                    <a
+                        href="/settings"
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition"
+                    >
+                        <Settings size={18} />
+                        System Settings
+                    </a>
+
+                </div>
+
+                {/* Admin Panel */}
+                {user.role === 'admin' && (
+
+                    <div className="bg-blue-100 border border-blue-200 p-6 rounded-xl mt-8 shadow-sm">
+
+                        <h2 className="font-bold text-2xl mb-2 text-blue-900">
                             Admin Panel
                         </h2>
 
@@ -53,12 +193,15 @@ export default function Dashboard() {
                         </Link>
 
                     </div>
+
                 )}
 
+                {/* Staff Panel */}
                 {user.role === 'staff' && (
-                    <div className="bg-green-100 border border-green-200 p-6 rounded-xl mb-8 shadow-sm">
 
-                        <h2 className="font-bold text-3xl mb-2 text-green-900">
+                    <div className="bg-green-100 border border-green-200 p-6 rounded-xl mt-8 shadow-sm">
+
+                        <h2 className="font-bold text-2xl mb-2 text-green-900">
                             Staff Panel
                         </h2>
 
@@ -67,17 +210,160 @@ export default function Dashboard() {
                         </p>
 
                     </div>
+
                 )}
 
-                <button
-                    onClick={handleLogout}
-                    className="bg-red-500 hover:bg-red-600 transition text-white px-6 py-3 rounded-lg"
-                >
-                    Logout
-                </button>
+            </nav>
+
+        </div>
+
+        {/* Profile */}
+        <div className="p-4">
+
+            <div className="bg-gray-50 border border-gray-200 rounded-3xl p-6 text-center shadow-sm">
+
+                <div className="relative w-fit mx-auto mb-4">
+
+                    <img
+                        src="https://ui-avatars.com/api/?name=Juan+Dela+Cruz&background=2563eb&color=fff"
+                        alt="Profile"
+                        className="w-12 h-12 rounded-full shadow-md"
+                    />
+
+                    <span className="absolute bottom-1 right-1 w-2 h-2 bg-green-500 border-2 border-white rounded-full"></span>
+
+                </div>
+
+                <p className="text-[11px] text-gray-500">
+                    Logged in as
+                </p>
+
+                <h3 className="text-xl font-bold text-gray-800 mt-2">
+                    {user.name}
+                </h3>
+
+                <p className="text-[11px] text-blue-600 font-medium mt-1">
+                    Barangay Health Worker
+                </p>
 
             </div>
 
-        </AuthenticatedLayout>
-    );
+            <Link
+                href={route('logout')}
+                method="post"
+                as="button"
+                className="w-full mt-2 bg-red-500 hover:bg-red-600 text-white py-2 rounded-2xl text-[15px] font-semibold transition"
+            >
+                Log Out
+            </Link>
+
+        </div>
+
+    </div>
+
+    {/* MAIN CONTENT */}
+    <div className="flex-1 px-5 py-4">
+
+        {/* Header */}
+        <div className="flex items-start justify-between mb-10">
+
+            <div>
+
+                <h1 className="text-[28px] font-bold text-gray-900">
+                    Health Center Dashboard
+                </h1>
+
+                <p className="text-[13px] text-gray-500 mt-2">
+                    Monitor residents records, medicine inventory, and recent health center activities.
+                </p>
+
+            </div>
+
+            <div className="flex items-center gap-4">
+
+                <div className="relative">
+
+                    <input
+                        type="text"
+                        placeholder="Search..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="w-80 h-10 pl-14 pr-3 rounded-2xl border border-gray-200 bg-white shadow-sm text-[14px] focus:outline-none"
+                    />
+
+                    <span className="absolute left-5 top-1/2 -translate-y-1/2 text-[15px] text-gray-400">
+                        🔍
+                    </span>
+
+                </div>
+
+                {/* Notifications */}
+                <div className="relative">
+
+                    <button
+                        onClick={() => setShowNotifications(!showNotifications)}
+                        className="relative w-10 h-10 rounded-2xl bg-white shadow-sm flex items-center justify-center"
+                    >
+
+                        <Bell className="w-5 h-5 text-gray-600" />
+
+                        {alerts.length > 0 && (
+
+                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full">
+                                {alerts.length}
+                            </span>
+
+                        )}
+
+                    </button>
+
+                    {showNotifications && (
+
+                        <div className="absolute right-0 mt-3 w-[320px] bg-white rounded-2xl shadow-xl border border-gray-100 z-50 p-4">
+
+                            <h2 className="text-[15px] font-semibold mb-4">
+                                Notifications
+                            </h2>
+
+                            <div className="space-y-3">
+
+                                {alerts.map((alert, index) => (
+
+                                    <div
+                                        key={index}
+                                        className="p-3 rounded-xl bg-gray-50 border border-gray-100"
+                                    >
+
+                                        <p className="text-[14px] font-medium text-gray-900">
+                                            {alert.title}
+                                        </p>
+
+                                        <p className="text-[12px] text-gray-500 mt-1">
+                                            {alert.message}
+                                        </p>
+
+                                    </div>
+
+                                ))}
+
+                            </div>
+
+                        </div>
+
+                    )}
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+</AuthenticatedLayout>
+
+);
+
 }
