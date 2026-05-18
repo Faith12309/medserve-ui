@@ -3,9 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
-// =============================================
-// MAIN INVENTORY ROUTES (No forced login)
-// =============================================
+
 Route::get('/', function () {
     return view('inventory');
 })->name('home');
@@ -18,9 +16,6 @@ Route::get('/dashboard', function () {
     return view('inventory');
 })->name('dashboard');
 
-// =============================================
-// AUTHENTICATED ROUTES
-// =============================================
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
