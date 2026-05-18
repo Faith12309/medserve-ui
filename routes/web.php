@@ -83,6 +83,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/batches', [MedicineBatchController::class, 'index']);
 
     Route::post('/batches', [MedicineBatchController::class, 'store']);
+
+    Route::delete('/batches/{id}', [MedicineBatchController::class, 'destroy']);
+
+    Route::put('/batches/{id}', [MedicineBatchController::class, 'update']);
 });
 
 require __DIR__.'/auth.php';

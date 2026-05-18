@@ -12,11 +12,15 @@ import {
 } from "lucide-react";
 
 export default function MedicineBatchesPage() {
+
+    // STATES
     const [batches, setBatches] = useState([]);
     const [filteredBatches, setFilteredBatches] = useState([]);
     const [search, setSearch] = useState("");
     const [filterExpired, setFilterExpired] = useState(false);
+    const [editingId, setEditingId] = useState(null);
 
+    // FORM
     const [form, setForm] = useState({
         medicine_id: "",
         batch_number: "",
@@ -25,57 +29,85 @@ export default function MedicineBatchesPage() {
         quantity_received: "",
     });
 
+    // FETCH ON LOAD
     useEffect(() => {
         fetchBatches();
     }, []);
 
+    // FETCH BATCHES
     const fetchBatches = async () => {
+
         try {
+
             const response = await axios.get("/batches");
 
             setBatches(response.data);
             setFilteredBatches(response.data);
 
         } catch (error) {
+
             console.error(error);
             alert("Failed to fetch batches");
         }
     };
 
+    // ADD / UPDATE
     const handleSubmit = async (e) => {
-        e.preventDefault();
 
-        if (
-            !form.medicine_id ||
-            !form.batch_number ||
-            !form.date_received ||
-            !form.expiration_date ||
-            !form.quantity_received
-        ) {
-            alert("Please fill in all fields.");
-            return;
-        }
+        e.preventDefault();
 
         try {
 
-            const submitData = {
-                ...form,
-                quantity_remaining: form.quantity_received,
-            };
+            // UPDATE
+            if (editingId) {
 
-            const response = await axios.post(
-                "/batches",
-                submitData
-            );
+                const response = await axios.put(
+                    `/batches/${editingId}`,
+                    {
+                        ...form,
+                        quantity_remaining:
+                            form.quantity_received,
+                    }
+                );
 
-            const updatedBatches = [
-                ...batches,
-                response.data,
-            ];
+                const updatedBatches = batches.map(
+                    (batch) =>
+                        batch.id === editingId
+                            ? response.data.batch
+                            : batch
+                );
 
-            setBatches(updatedBatches);
-            setFilteredBatches(updatedBatches);
+                setBatches(updatedBatches);
+                setFilteredBatches(updatedBatches);
 
+                alert("Batch updated successfully!");
+
+                setEditingId(null);
+
+            } else {
+
+                // ADD
+                const response = await axios.post(
+                    "/batches",
+                    {
+                        ...form,
+                        quantity_remaining:
+                            form.quantity_received,
+                    }
+                );
+
+                const updatedBatches = [
+                    ...batches,
+                    response.data.batch,
+                ];
+
+                setBatches(updatedBatches);
+                setFilteredBatches(updatedBatches);
+
+                alert("Medicine batch added successfully!");
+            }
+
+            // RESET FORM
             setForm({
                 medicine_id: "",
                 batch_number: "",
@@ -84,41 +116,28 @@ export default function MedicineBatchesPage() {
                 quantity_received: "",
             });
 
-            alert("Medicine batch added successfully!");
-
         } catch (error) {
 
             console.error(error);
 
-            // BACKEND VALIDATION ERRORS
             if (error.response?.data?.errors) {
 
-                const errors = error.response.data.errors;
+                const errors =
+                    error.response.data.errors;
 
-                // EXPIRATION ERROR
-                if (errors.expiration_date) {
-                    alert(errors.expiration_date[0]);
-                    return;
-                }
+                const firstError =
+                    Object.values(errors)[0][0];
 
-                // DUPLICATE BATCH NUMBER
-                if (errors.batch_number) {
-                    alert(errors.batch_number[0]);
-                    return;
-                }
-
-                // OTHER ERRORS
-                const firstError = Object.values(errors)[0][0];
                 alert(firstError);
 
                 return;
             }
 
-            // GENERAL ERROR
-            alert("Failed to add medicine batch");
+            alert("Operation failed");
         }
     };
 
+    // SEARCH
     const handleSearch = (e) => {
 
         const value = e.target.value;
@@ -134,14 +153,26 @@ export default function MedicineBatchesPage() {
         setFilteredBatches(filtered);
     };
 
+    // FILTER EXPIRED
     const handleFilterExpired = () => {
 
         if (!filterExpired) {
 
+            const today = new Date();
+
+            today.setHours(0,0,0,0);
+
             const expired = batches.filter(
-                (batch) =>
-                    new Date(batch.expiration_date) <
-                    new Date()
+                (batch) => {
+
+                    const expDate = new Date(
+                        batch.expiration_date
+                    );
+
+                    expDate.setHours(0,0,0,0);
+
+                    return expDate <= today;
+                }
             );
 
             setFilteredBatches(expired);
@@ -154,19 +185,41 @@ export default function MedicineBatchesPage() {
         setFilterExpired(!filterExpired);
     };
 
+    // COUNTS
+    const today = new Date();
+
+    today.setHours(0,0,0,0);
+
     const totalBatches = batches.length;
 
     const activeBatches = batches.filter(
-        (batch) =>
-            new Date(batch.expiration_date) > new Date()
+        (batch) => {
+
+            const expDate = new Date(
+                batch.expiration_date
+            );
+
+            expDate.setHours(0,0,0,0);
+
+            return expDate > today;
+        }
     ).length;
 
     const expiredBatches = batches.filter(
-        (batch) =>
-            new Date(batch.expiration_date) <= new Date()
+        (batch) => {
+
+            const expDate = new Date(
+                batch.expiration_date
+            );
+
+            expDate.setHours(0,0,0,0);
+
+            return expDate <= today;
+        }
     ).length;
 
     return (
+
         <div
             style={{
                 minHeight: "100vh",
@@ -174,11 +227,12 @@ export default function MedicineBatchesPage() {
                 fontFamily: "Inter, sans-serif",
             }}
         >
+
             {/* HEADER */}
             <div
                 style={{
                     height: "72px",
-                    background: "#ffffff",
+                    background: "#fff",
                     borderBottom: "1px solid #e5e7eb",
                     display: "flex",
                     justifyContent: "space-between",
@@ -186,6 +240,7 @@ export default function MedicineBatchesPage() {
                     padding: "0 28px",
                 }}
             >
+
                 <div
                     style={{
                         display: "flex",
@@ -193,6 +248,7 @@ export default function MedicineBatchesPage() {
                         gap: "12px",
                     }}
                 >
+
                     <div
                         style={{
                             width: "48px",
@@ -209,12 +265,12 @@ export default function MedicineBatchesPage() {
                     </div>
 
                     <div>
+
                         <h1
                             style={{
                                 margin: 0,
                                 fontSize: "18px",
                                 fontWeight: "800",
-                                color: "#0f172a",
                             }}
                         >
                             MedServe
@@ -231,6 +287,7 @@ export default function MedicineBatchesPage() {
                         >
                             BARANGAY NANGCA
                         </p>
+
                     </div>
                 </div>
 
@@ -241,10 +298,10 @@ export default function MedicineBatchesPage() {
                         gap: "24px",
                     }}
                 >
+
                     <span
                         style={{
                             color: "#64748b",
-                            fontSize: "15px",
                         }}
                     >
                         Medicine Inventory
@@ -254,7 +311,6 @@ export default function MedicineBatchesPage() {
                         style={{
                             color: "#2563eb",
                             fontWeight: "700",
-                            fontSize: "15px",
                         }}
                     >
                         Batch Tracking
@@ -275,16 +331,17 @@ export default function MedicineBatchesPage() {
                             gap: "10px",
                         }}
                     >
+
                         <UserCircle2
                             size={30}
                             color="#2563eb"
                         />
 
                         <div>
+
                             <div
                                 style={{
                                     fontWeight: "700",
-                                    fontSize: "15px",
                                 }}
                             >
                                 Faith
@@ -298,6 +355,7 @@ export default function MedicineBatchesPage() {
                             >
                                 Staff
                             </div>
+
                         </div>
                     </div>
                 </div>
@@ -311,20 +369,21 @@ export default function MedicineBatchesPage() {
                     margin: "0 auto",
                 }}
             >
+
                 {/* TOP */}
                 <div
                     style={{
                         display: "flex",
                         justifyContent: "space-between",
-                        alignItems: "flex-start",
                         marginBottom: "24px",
                     }}
                 >
+
                     <div>
+
                         <h1
                             style={{
                                 fontSize: "40px",
-                                lineHeight: "1",
                                 margin: 0,
                                 fontWeight: "900",
                                 color: "#0f172a",
@@ -336,27 +395,25 @@ export default function MedicineBatchesPage() {
                         <p
                             style={{
                                 color: "#64748b",
-                                fontSize: "17px",
                                 marginTop: "12px",
                             }}
                         >
-                            Manage medicine inventory batches and
-                            monitor expiration dates.
+                            Manage medicine inventory batches and monitor expiration dates.
                         </p>
+
                     </div>
 
                     <div
                         style={{
-                            background: "#ffffff",
+                            background: "#fff",
                             borderRadius: "22px",
                             padding: "20px 24px",
                             display: "flex",
                             gap: "22px",
                             border: "1px solid #e5e7eb",
-                            minWidth: "500px",
-                            justifyContent: "space-between",
                         }}
                     >
+
                         <StatCard
                             icon={
                                 <ClipboardList
@@ -395,10 +452,11 @@ export default function MedicineBatchesPage() {
                             value={expiredBatches}
                             sub="Need attention"
                         />
+
                     </div>
                 </div>
 
-                {/* GRID */}
+                {/* CONTENT */}
                 <div
                     style={{
                         display: "grid",
@@ -406,28 +464,31 @@ export default function MedicineBatchesPage() {
                         gap: "24px",
                     }}
                 >
+
                     {/* FORM */}
                     <div
                         style={{
-                            background: "#ffffff",
+                            background: "#fff",
                             borderRadius: "24px",
                             padding: "28px",
                             border: "1px solid #e5e7eb",
-                            height: "fit-content",
                         }}
                     >
+
                         <h2
                             style={{
                                 fontSize: "22px",
                                 marginBottom: "24px",
                                 fontWeight: "800",
-                                color: "#0f172a",
                             }}
                         >
-                            Add New Batch
+                            {editingId
+                                ? "Edit Batch"
+                                : "Add New Batch"}
                         </h2>
 
                         <form onSubmit={handleSubmit}>
+
                             <InputField
                                 label="Medicine ID"
                                 value={form.medicine_id}
@@ -460,6 +521,7 @@ export default function MedicineBatchesPage() {
                                     gap: "12px",
                                 }}
                             >
+
                                 <InputField
                                     label="Date Received"
                                     type="date"
@@ -485,6 +547,7 @@ export default function MedicineBatchesPage() {
                                         })
                                     }
                                 />
+
                             </div>
 
                             <InputField
@@ -508,42 +571,43 @@ export default function MedicineBatchesPage() {
                                     borderRadius: "14px",
                                     background:
                                         "linear-gradient(135deg,#2563eb,#1d4ed8)",
-                                    color: "#ffffff",
+                                    color: "#fff",
                                     fontWeight: "700",
-                                    fontSize: "15px",
                                     cursor: "pointer",
                                     marginTop: "14px",
                                 }}
                             >
-                                Add Medicine Batch
+                                {editingId
+                                    ? "Update Medicine Batch"
+                                    : "Add Medicine Batch"}
                             </button>
+
                         </form>
                     </div>
 
                     {/* TABLE */}
                     <div
                         style={{
-                            background: "#ffffff",
+                            background: "#fff",
                             borderRadius: "24px",
                             padding: "24px",
                             border: "1px solid #e5e7eb",
                         }}
                     >
+
                         <div
                             style={{
                                 display: "flex",
-                                justifyContent:
-                                    "space-between",
-                                alignItems: "center",
+                                justifyContent: "space-between",
                                 marginBottom: "18px",
                             }}
                         >
+
                             <h2
                                 style={{
                                     margin: 0,
                                     fontSize: "24px",
                                     fontWeight: "800",
-                                    color: "#0f172a",
                                 }}
                             >
                                 Medicine Batches
@@ -555,6 +619,7 @@ export default function MedicineBatchesPage() {
                                     gap: "10px",
                                 }}
                             >
+
                                 <div
                                     style={{
                                         display: "flex",
@@ -569,6 +634,7 @@ export default function MedicineBatchesPage() {
                                         background: "#f8fafc",
                                     }}
                                 >
+
                                     <Search
                                         size={18}
                                         color="#64748b"
@@ -584,9 +650,9 @@ export default function MedicineBatchesPage() {
                                             background:
                                                 "transparent",
                                             width: "100%",
-                                            fontSize: "14px",
                                         }}
                                     />
+
                                 </div>
 
                                 <button
@@ -597,19 +663,18 @@ export default function MedicineBatchesPage() {
                                         borderRadius: "14px",
                                         border:
                                             "1px solid #dbe2ea",
-                                        background:
-                                            "#ffffff",
+                                        background: "#fff",
                                         display: "flex",
                                         alignItems: "center",
                                         gap: "8px",
                                         fontWeight: "700",
-                                        fontSize: "14px",
                                         cursor: "pointer",
                                     }}
                                 >
                                     <Filter size={18} />
                                     Filter
                                 </button>
+
                             </div>
                         </div>
 
@@ -620,7 +685,9 @@ export default function MedicineBatchesPage() {
                                     "collapse",
                             }}
                         >
+
                             <thead>
+
                                 <tr
                                     style={{
                                         background:
@@ -634,59 +701,177 @@ export default function MedicineBatchesPage() {
                                     <Th>EXPIRATION</Th>
                                     <Th>QTY RECEIVED</Th>
                                     <Th>QTY REMAINING</Th>
+                                    <Th>ACTIONS</Th>
                                 </tr>
+
                             </thead>
 
                             <tbody>
+
                                 {filteredBatches.map(
                                     (batch) => (
+
                                         <tr
                                             key={batch.id}
                                             style={{
-                                                height:
-                                                    "62px",
+                                                height: "62px",
                                                 borderBottom:
                                                     "1px solid #edf2f7",
                                             }}
                                         >
+
                                             <Td bold>
-                                                {
-                                                    batch.batch_number
-                                                }
+                                                {batch.batch_number}
                                             </Td>
 
                                             <Td>
-                                                {
-                                                    batch.medicine_id
-                                                }
+                                                {batch.medicine_id}
                                             </Td>
 
                                             <Td>
-                                                {
-                                                    batch.date_received
-                                                }
+                                                {batch.date_received}
                                             </Td>
 
                                             <Td>
-                                                {
-                                                    batch.expiration_date
-                                                }
+                                                {batch.expiration_date}
                                             </Td>
 
                                             <Td>
-                                                {
-                                                    batch.quantity_received
-                                                }
+                                                {batch.quantity_received}
                                             </Td>
 
                                             <Td>
-                                                {
-                                                    batch.quantity_remaining
-                                                }
+                                                {batch.quantity_remaining}
                                             </Td>
+
+                                            <td
+                                                style={{
+                                                    padding: "0 20px",
+                                                }}
+                                            >
+
+                                                <div
+                                                    style={{
+                                                        display: "flex",
+                                                        gap: "18px",
+                                                    }}
+                                                >
+
+                                                    {/* EDIT */}
+                                                    <button
+                                                        onClick={() => {
+
+                                                            setEditingId(batch.id);
+
+                                                            setForm({
+                                                                medicine_id: batch.medicine_id,
+                                                                batch_number: batch.batch_number,
+                                                                date_received: batch.date_received,
+                                                                expiration_date: batch.expiration_date,
+                                                                quantity_received: batch.quantity_received,
+                                                            });
+                                                        }}
+                                                        style={{
+                                                            background: "transparent",
+                                                            border: "none",
+                                                            cursor: "pointer",
+                                                            padding: 0,
+                                                        }}
+                                                    >
+
+                                                        <svg
+                                                            xmlns="http://www.w3.org/2000/svg"
+                                                            width="22"
+                                                            height="22"
+                                                            viewBox="0 0 24 24"
+                                                            fill="none"
+                                                            stroke="#eab308"
+                                                            strokeWidth="2"
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                        >
+                                                            <path d="M12 20h9" />
+                                                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                                                        </svg>
+
+                                                    </button>
+
+                                                    {/* DELETE */}
+                                                    <button
+                                                        onClick={async () => {
+
+                                                            const confirmDelete =
+                                                                window.confirm(
+                                                                    "Delete this batch?"
+                                                                );
+
+                                                            if (!confirmDelete)
+                                                                return;
+
+                                                            try {
+
+                                                                await axios.delete(
+                                                                    `/batches/${batch.id}`
+                                                                );
+
+                                                                const updatedBatches =
+                                                                    batches.filter(
+                                                                        (item) =>
+                                                                            item.id !== batch.id
+                                                                    );
+
+                                                                setBatches(updatedBatches);
+
+                                                                setFilteredBatches(updatedBatches);
+
+                                                                alert(
+                                                                    "Batch deleted successfully"
+                                                                );
+
+                                                            } catch (error) {
+
+                                                                console.error(error);
+
+                                                                alert(
+                                                                    "Failed to delete batch"
+                                                                );
+                                                            }
+                                                        }}
+                                                        style={{
+                                                            background: "transparent",
+                                                            border: "none",
+                                                            cursor: "pointer",
+                                                            padding: 0,
+                                                        }}
+                                                    >
+
+                                                        <svg
+                                                            xmlns="http://www.w3.org/2000/svg"
+                                                            width="22"
+                                                            height="22"
+                                                            viewBox="0 0 24 24"
+                                                            fill="none"
+                                                            stroke="#ef4444"
+                                                            strokeWidth="2"
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                        >
+                                                            <polyline points="3 6 5 6 21 6" />
+                                                            <path d="M19 6l-1 14H6L5 6" />
+                                                            <path d="M10 11v6" />
+                                                            <path d="M14 11v6" />
+                                                            <path d="M9 6V4h6v2" />
+                                                        </svg>
+
+                                                    </button>
+
+                                                </div>
+                                            </td>
+
                                         </tr>
                                     )
                                 )}
+
                             </tbody>
                         </table>
                     </div>
@@ -696,21 +881,24 @@ export default function MedicineBatchesPage() {
     );
 }
 
+// INPUT
 function InputField({
     label,
     type = "text",
     value,
     onChange,
 }) {
+
     return (
+
         <div style={{ marginBottom: "16px" }}>
+
             <label
                 style={{
                     display: "block",
                     marginBottom: "8px",
                     fontWeight: "700",
                     fontSize: "14px",
-                    color: "#0f172a",
                 }}
             >
                 {label}
@@ -727,14 +915,15 @@ function InputField({
                     border: "1px solid #d7dee7",
                     padding: "0 14px",
                     boxSizing: "border-box",
-                    fontSize: "14px",
                     outline: "none",
                 }}
             />
+
         </div>
     );
 }
 
+// STAT CARD
 function StatCard({
     icon,
     bg,
@@ -742,7 +931,9 @@ function StatCard({
     value,
     sub,
 }) {
+
     return (
+
         <div
             style={{
                 display: "flex",
@@ -750,6 +941,7 @@ function StatCard({
                 gap: "12px",
             }}
         >
+
             <div
                 style={{
                     width: "52px",
@@ -765,6 +957,7 @@ function StatCard({
             </div>
 
             <div>
+
                 <div
                     style={{
                         fontSize: "14px",
@@ -778,7 +971,6 @@ function StatCard({
                     style={{
                         fontSize: "18px",
                         fontWeight: "800",
-                        color: "#0f172a",
                     }}
                 >
                     {value}
@@ -792,13 +984,17 @@ function StatCard({
                 >
                     {sub}
                 </div>
+
             </div>
         </div>
     );
 }
 
+// TABLE HEAD
 function Th({ children }) {
+
     return (
+
         <th
             style={{
                 textAlign: "left",
@@ -813,8 +1009,11 @@ function Th({ children }) {
     );
 }
 
+// TABLE DATA
 function Td({ children, bold }) {
+
     return (
+
         <td
             style={{
                 padding: "0 20px",
